@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Polar H10 HR</title>
+        <style>
+p {
+    font-size: 96px;
+    font-family: monospace;
+    color: #D9C39F;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    -webkit-text-stroke: 8px black;
+    paint-order: stroke fill;
+}
+        </style>
+    </head>
+    <body>
+        <p id="hr">n/a</p>
+        <script>
+function exponentialBackoff(attempt, base, cap) {
+    return Math.random() * Math.min(cap, base * 2**attempt)
+}
+
+class WS {
+    constructor(url, element) {
+        this.url = url;
+        this.element = element;
+        this.attempt = 0;
+    }
+
+    onMessage(event) {
+        this.element.textContent = event.data;
+    }
+
+    onOpen(event) {
+        this.attempt = 0;
+    }
+
+    onClose(event) {
+        const jitter = exponentialBackoff(++this.attempt, 1000, 60000);
+
+        if (this.attempt < 100) {
+            setTimeout(this.connect.bind(this), jitter);
+        }
+    }
+
+    connect() {
+        this.socket = new WebSocket(this.url);
+        this.socket.addEventListener("open", this.onOpen.bind(this));
+        this.socket.addEventListener("message", this.onMessage.bind(this));
+        this.socket.addEventListener("close", this.onClose.bind(this));
+    }
+}
+
+const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+const host = window.location.host;
+
+document.addEventListener("DOMContentLoaded", function() {
+    var ws = new WS(`${protocol}//${host}/hr`, document.getElementById("hr"))
+    ws.connect();
+})
+        </script>
+    </body>
+</html>

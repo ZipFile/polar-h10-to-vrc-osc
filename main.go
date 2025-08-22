@@ -57,14 +57,17 @@ func main() {
 		MaxHR:       DefaultMaxHR,
 		IsConnected: true,
 	}
+	httpAddr := defaultAddr
 
 	println("Sending OSC data to", fmt.Sprintf("%s:%d", oscHost, oscPort))
 	println("Min HR:", relay.MinHR)
 	println("Max HR:", relay.MaxHR)
+	println("URL: http://" + httpAddr)
 	println("Press Ctrl+C to exit")
 
 	go reader.StreamHeartRate(ctx, hr)
 	go relay.Do(ctx, hr)
+	go serveHttp(hr, httpAddr, ctx)
 
 	select {
 	case <-sigint:
