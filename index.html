@@ -3,23 +3,31 @@
     <head>
         <title>Polar H10 HR</title>
         <style>
+body {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    overflow: hidden;
+}
+
 p {
-    font-size: 96px;
+    font-size: 100vmin;
     font-family: monospace;
-    color: #D9C39F;
+    line-height: 1;
+    color: Canvas;
     margin: 0;
     padding: 0;
     text-align: center;
-    -webkit-text-stroke: 8px black;
+    -webkit-text-stroke: 8vmin CanvasText;
     paint-order: stroke fill;
 }
         </style>
     </head>
     <body>
-        <p id="hr">n/a</p>
+        <p><span id="prefix"></span><span id="hr">n/a</span><span id="suffix"></span></p>
         <script>
 function exponentialBackoff(attempt, base, cap) {
-    return Math.random() * Math.min(cap, base * 2**attempt)
+    return Math.random() * Math.min(cap, base * 2**attempt);
 }
 
 class WS {
@@ -55,11 +63,24 @@ class WS {
 
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 const host = window.location.host;
+const urlParams = new URLSearchParams(window.location.search);
+const placeholder = urlParams.get("hr");
+const element = document.getElementById("hr");
+const ws = new WS(`${protocol}//${host}/hr`, element);
 
-document.addEventListener("DOMContentLoaded", function() {
-    var ws = new WS(`${protocol}//${host}/hr`, document.getElementById("hr"))
+for (const name of ["prefix", "suffix"]) {
+    const value = urlParams.get(name);
+
+    if (value) {
+        document.getElementById(name).textContent = value
+    }
+}
+
+if (placeholder) {
+    element.textContent = placeholder;
+} else {
     ws.connect();
-})
+}
         </script>
     </body>
 </html>
