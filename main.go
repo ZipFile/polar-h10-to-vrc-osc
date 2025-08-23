@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"time"
 
 	"github.com/hypebeast/go-osc/osc"
@@ -15,6 +16,10 @@ import (
 var adapter = bluetooth.DefaultAdapter
 var oscHost = "127.0.0.1"
 var oscPort = 9000
+
+func init() {
+	runtime.GOMAXPROCS(1)
+}
 
 func main() {
 	ctx := context.Background()
