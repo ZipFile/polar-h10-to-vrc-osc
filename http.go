@@ -4,21 +4,23 @@ import (
 	"context"
 	_ "embed"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/siiimooon/go-polar/pkg/h10"
 )
 
 //go:embed index.html
-var indexHtml string
+var indexHtml []byte
+var indexHtmlContentLength = strconv.Itoa(len(indexHtml))
 
 const defaultAddr = "localhost:4880"
 
 func serveIndexHtml(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-cache, no-store")
+	w.Header().Set("Content-Length", indexHtmlContentLength)
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(indexHtml))
+	_, _ = w.Write(indexHtml)
 }
 
 func serveHttp(hr chan h10.HeartRateMeasurement, addr string, ctx context.Context) error {
