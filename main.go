@@ -8,14 +8,15 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/ZipFile/polar-h10-to-osc/internal/common"
+	"github.com/ZipFile/polar-h10-to-osc/internal/osc/vnyan"
+	"github.com/ZipFile/polar-h10-to-osc/internal/osc/vrc"
 	"github.com/hypebeast/go-osc/osc"
 	"github.com/siiimooon/go-polar/pkg/h10"
 	"tinygo.org/x/bluetooth"
 )
 
 var adapter = bluetooth.DefaultAdapter
-var oscHost = "127.0.0.1"
-var oscPort = 9000
 
 func init() {
 	runtime.GOMAXPROCS(1)
@@ -26,6 +27,12 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
+
+	adapter.SetConnectHandler(func(device bluetooth.Device, connected bool) {
+		if !connected {
+			cancel()
+		}
+	})
 
 	// Enable BLE interface.
 	must("enable BLE stack", adapter.Enable())
@@ -56,17 +63,24 @@ func main() {
 
 	reader := h10.New(&device)
 	hr := make(chan h10.HeartRateMeasurement, 10)
-	relay := OSCRelay{
-		Client:      osc.NewClient(oscHost, oscPort),
-		MinHR:       DefaultMinHR,
-		MaxHR:       DefaultMaxHR,
-		IsConnected: true,
+	params := *vrc_osc.PresetDefault
+	params.Min = 32
+	params.Max = 192
+	vrcSender := &vrc_osc.Sender{
+		Client: osc.NewClient(vrc_osc.DefaultHost, vrc_osc.DefaultPort),
+		Params: params,
 	}
+	vnyanSender := &vnyan_osc.Sender{
+		Client: osc.NewClient(vnyan_osc.DefaultHost, vnyan_osc.DefaultPort),
+	}
+	relay := NewOSCRelay(
+		common.CombinedSender{vrcSender, vnyanSender},
+		true,
+	)
 	httpAddr := defaultAddr
 
-	println("Sending OSC data to", fmt.Sprintf("%s:%d", oscHost, oscPort))
-	println("Min HR:", relay.MinHR)
-	println("Max HR:", relay.MaxHR)
+	println("Sending VRChat OSC data to", fmt.Sprintf("%s:%d", vrc_osc.DefaultHost, vrc_osc.DefaultPort))
+	println("Sending VNyan OSC data to", fmt.Sprintf("%s:%d", vnyan_osc.DefaultHost, vnyan_osc.DefaultPort))
 	println("URL: http://" + httpAddr)
 	println("Press Ctrl+C to exit")
 
